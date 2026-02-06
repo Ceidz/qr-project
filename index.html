@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>QR Studio</title>
+    <meta name="theme-color" content="#000000">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <link rel="stylesheet" href="qr.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png">
+</head>
+<body>
+    <div id="app-loader">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+    <div id="toast-container"></div>
+    <div id="context-menu" class="hidden">
+        <button onclick="cmAction('load')">Load</button>
+        <button onclick="cmAction('dup')">Duplicate</button>
+        <button onclick="cmAction('del')">Delete</button>
+    </div>
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="brand">QR Studio</div>
+            <div class="nav-menu">
+                <button class="nav-item active" onclick="switchTab('gen', this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    <span>Generate</span>
+                </button>
+                <button class="nav-item" onclick="switchTab('scan', this)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+                    <span>Scan</span>
+                </button>
+            </div>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                <span id="theme-text">Dark</span>
+            </button>
+        </nav>
+        <main class="content-area">
+            <div id="gen" class="tab-content active">
+                <div class="workspace-grid">
+                    <div class="preview-column">
+                        <div class="preview-stage">
+                            <div id="qr-container">
+                                <div id="qr"></div>
+                            </div>
+                        </div>
+                        <div class="preview-actions">
+                            <button class="btn-main" onclick="downloadQR('png')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Download
+                            </button>
+                            <button class="btn-sub" onclick="downloadQR('svg')">SVG</button>
+                            <button class="btn-sub" onclick="copyImageToClipboard()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            </button>
+                            <button class="btn-sub mobile-show" onclick="shareQR()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="controls-column">
+                        <div class="section-block">
+                            <div class="section-header">Data Input</div>
+                            <div class="segmented-control">
+                                <button class="seg-btn active" onclick="setGenMode('url')">URL</button>
+                                <button class="seg-btn" onclick="setGenMode('wifi')">WiFi</button>
+                                <button class="seg-btn" onclick="setGenMode('text')">Text</button>
+                            </div>
+                            <div class="input-stack">
+                                <div id="input-url">
+                                    <input id="data" type="text" value="https://example.com" placeholder="https://...">
+                                </div>
+                                <div id="input-wifi" class="hidden">
+                                    <input id="wifiSsid" type="text" placeholder="Network Name">
+                                    <input id="wifiPass" type="password" placeholder="Password" style="margin-top: 8px;">
+                                    <select id="wifiType" style="margin-top: 8px;">
+                                        <option value="WPA">WPA/WPA2</option>
+                                        <option value="WEP">WEP</option>
+                                        <option value="nopass">No Password</option>
+                                    </select>
+                                </div>
+                                <div id="input-text" class="hidden">
+                                    <textarea id="plainText" rows="4" placeholder="Enter text..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <details class="accordion" open>
+                            <summary>Design</summary>
+                            <div class="accordion-body">
+                                <div class="control-group">
+                                    <label>Pattern</label>
+                                    <div class="segmented-control">
+                                        <button class="seg-btn active" data-val="rounded" onclick="updateSegment('dots', this)">Round</button>
+                                        <button class="seg-btn" data-val="dots" onclick="updateSegment('dots', this)">Dots</button>
+                                        <button class="seg-btn" data-val="square" onclick="updateSegment('dots', this)">Square</button>
+                                    </div>
+                                    <input type="hidden" id="dots" value="rounded">
+                                </div>
+                                <div class="control-group">
+                                    <label>Corners</label>
+                                    <div class="segmented-control">
+                                        <button class="seg-btn" data-val="extra-rounded" onclick="updateSegment('cornersSquare', this)">Round</button>
+                                        <button class="seg-btn active" data-val="square" onclick="updateSegment('cornersSquare', this)">Square</button>
+                                        <button class="seg-btn" data-val="dot" onclick="updateSegment('cornersSquare', this)">Dot</button>
+                                    </div>
+                                    <input type="hidden" id="cornersSquare" value="square">
+                                </div>
+                                <div class="color-group">
+                                    <label>Color</label>
+                                    <div class="color-row">
+                                        <input type="color" id="c1" value="#000000">
+                                        <input type="text" id="hex-c1" value="#000000" maxlength="7" placeholder="#000000">
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                        <details class="accordion">
+                            <summary>Logo</summary>
+                            <div class="accordion-body">
+                                <div class="file-drop" id="logo-drop">
+                                    <input type="file" id="logo" accept="image/*">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    <span>Upload Logo</span>
+                                </div>
+                                <div id="logo-preview" class="hidden">
+                                    <img id="logo-preview-img" alt="Logo">
+                                    <button class="btn-remove" onclick="removeLogo()">Remove</button>
+                                </div>
+                                <div class="range-group">
+                                    <label>Size <span id="val-logoSize">0.3</span></label>
+                                    <input type="range" id="logoSize" min="0.1" max="0.5" step="0.01" value="0.3" oninput="updateRangeVal(this)">
+                                </div>
+                            </div>
+                        </details>
+                        <details class="accordion">
+                            <summary>Settings</summary>
+                            <div class="accordion-body">
+                                <div class="control-group">
+                                    <label>Error Correction</label>
+                                    <select id="ec">
+                                        <option value="L">Low</option>
+                                        <option value="M" selected>Medium</option>
+                                        <option value="Q">High</option>
+                                        <option value="H">Highest</option>
+                                    </select>
+                                </div>
+                                <div class="control-group">
+                                    <label>Export Size</label>
+                                    <select id="size">
+                                        <option value="1000">1000px</option>
+                                        <option value="2000" selected>2000px</option>
+                                        <option value="4000">4000px</option>
+                                    </select>
+                                </div>
+                                <div class="toggle-row">
+                                    <label>Transparent Background</label>
+                                    <label class="toggle">
+                                        <input type="checkbox" id="transparentBg">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </details>
+                        <div class="history-section">
+                            <div class="history-header">
+                                <span>History</span>
+                                <button onclick="clearHistory()">Clear</button>
+                            </div>
+                            <div id="history-list" class="history-scroll"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="scan" class="tab-content">
+                <div class="scanner-container">
+                    <div class="scanner-frame">
+                        <div class="camera-view">
+                            <div id="reader"></div>
+                            <div id="camera-placeholder" class="camera-placeholder">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                <span>Camera Idle</span>
+                            </div>
+                        </div>
+                        <div class="scanner-controls">
+                            <button class="btn-main full" onclick="startScan()" id="btn-scan-start">Activate Camera</button>
+                            <button class="btn-main full hidden" onclick="stopScan()" id="btn-scan-stop">Stop Camera</button>
+                        </div>
+                    </div>
+                    <div class="file-scan-section">
+                        <div class="divider"><span>or upload image</span></div>
+                        <div class="file-drop small">
+                            <input type="file" id="scan-file-input" accept="image/*" onchange="scanFromFile(this)">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <span>Select Image</span>
+                        </div>
+                    </div>
+                    <div id="scanResultContainer" class="scan-result hidden">
+                        <div class="result-content">
+                            <p id="scanResultText">...</p>
+                        </div>
+                        <div class="result-actions">
+                            <a id="scanResultLink" href="#" target="_blank" class="btn-link hidden">Open</a>
+                            <button onclick="copyResult()" class="btn-copy">Copy</button>
+                            <button onclick="useScannedData()" class="btn-copy">Use</button>
+                            <button onclick="closeResult()" class="btn-close">×</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+    </div>
+    <script src="qr.js"></script>
+</body>
+</html>
